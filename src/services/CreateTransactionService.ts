@@ -1,10 +1,9 @@
 import { getCustomRepository, getRepository } from 'typeorm';
 
-import AppError from '../errors/AppError';
-
 import Transaction from '../models/Transaction';
 import Category from '../models/Category';
 import TransactionsRepository from '../repositories/TransactionsRepository';
+import AppError from '../errors/AppError';
 
 interface Request {
   title: string;
@@ -24,6 +23,14 @@ class CreateTransactionService {
     category,
   }: Request): Promise<Transaction> {
     const transactionRepository = getCustomRepository(TransactionsRepository);
+
+    if (type === 'outcome') {
+      const balance = await transactionRepository.getBalance();
+
+      if (value > balance.total) {
+        throw new AppError('You cannot extrapolate your income totals');
+      }
+    }
 
     const categoriesRepository = getRepository(Category);
     let found = await categoriesRepository.findOne({
